@@ -56,6 +56,17 @@ for epoch in range(30):
         loss.backward()
         optimizer.step()
     print(f"Epoch {epoch+1}, Loss: {loss.item():.4f}")
+# Evaluate on test set
+X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
+y_test_tensor = torch.tensor(y_test, dtype=torch.float32).unsqueeze(1)
+
+model.eval()
+with torch.no_grad():
+    outputs = model(X_test_tensor)
+    predictions = torch.sigmoid(outputs).round()
+    accuracy = (predictions.eq(y_test_tensor).sum().float() / y_test_tensor.shape[0]).item()
+
+print(f"🧠 Test Accuracy: {accuracy * 100:.2f}%")
 
 torch.save(model.state_dict(), "models/lstm_model.pt")
 print("LSTM Model trained and saved.")
