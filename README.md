@@ -51,6 +51,7 @@ python train_lstm.py
 Saves to `model/lstm_model.pt`
 
 **Log at least 10+ entries to start.**
+
 5. 🔹 With Feedforward (manual input):
 bash
 Copy
