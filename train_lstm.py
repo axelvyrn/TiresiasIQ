@@ -8,7 +8,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import joblib
 import os
-from lstm_model import LSTMModel
+from model.lstm_predictor import LSTMPredictor
+from utils.data_preprocessing import load_and_prepare_data
 
 # Load the labeled data
 df = pd.read_csv("data/personal_log_labeled.csv")
@@ -27,7 +28,7 @@ joblib.dump(activity_encoder, "models/activity_encoder.pkl")
 
 # Features and target
 X = df[['context_enc', 'activity_enc']].values
-y = df['completed_within_2hrs'].values
+y = df['completed_in_window'].values
 
 # Add dummy sequence dimension for LSTM: (batch, seq_len, features)
 X = np.expand_dims(X, axis=1)
@@ -43,7 +44,7 @@ train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
 train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
 
 # Initialize model
-model = LSTMModel(input_size=X.shape[2])
+model = LSTMPredictor(input_size=X.shape[2])
 criterion = nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
