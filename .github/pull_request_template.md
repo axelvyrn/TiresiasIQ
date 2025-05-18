@@ -16,7 +16,7 @@
 - [ ] I verified tests pass locally with `pytest`
 
 ## 🛡️ Core File Protection
-- [ ] I have NOT modified files inside the `/core` folder (unless discussed)
+- [ ] I have NOT modified files that run the core program (unless discussed)
 
 ## 📄 Related Issue / Task
 <!-- Link related issues or discussions -->
