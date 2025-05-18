@@ -1,10 +1,9 @@
-# evaluate_model.py
 import torch
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import precision_score, recall_score, f1_score
-from lstm_model import LSTMModel
+from model.lstm_predictor import LSTMPredictor
 import joblib
 
 df = pd.read_csv("data/personal_log_labeled.csv")
@@ -21,7 +20,7 @@ y = df['completed_in_window'].values
 X_tensor = torch.tensor(np.expand_dims(X, axis=1), dtype=torch.float32)
 y_tensor = torch.tensor(y, dtype=torch.float32)
 
-model = LSTMModel(input_size=X.shape[1])
+model = LSTMPredictor(input_size=X.shape[1])
 model.load_state_dict(torch.load("models/lstm_model.pt"))
 model.eval()
 
