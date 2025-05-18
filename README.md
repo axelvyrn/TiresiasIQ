@@ -27,45 +27,18 @@ python log_entry.py
 ```
 It will ask for:
 
-- Mood
-- Location
+- Context
 - Activity
-- Weather
 - Whether you actually did the action (yes/no)
 
 It saves the data to `data/personal_log.csv`
 **You can either use the CLI logger which will create another personal_log.csv file, or you can edit the already existing one by running the CLI logger once and checking the parameters to be updated respectively.**
+LSTM uses your last 5 entries to predict whether you’ll do the action again. So do the process atleast 10 times for a good output.
 
-4. You have two training scripts:
+4. Run `run_ffn_pipeline.py` to use the FFN Predictor (higher efficiency) or the `run_lstm_pipeline.py` to use the LSTM Predictor (higher accuracy)
 
-🔹 Train Feedforward:
-```bash
-python train_ffn.py
-```
-Saves to `model/feedforward_model.pt`
+## Optional: Use the Web Dashboard
 
-🔹 Train LSTM:
-```bash
-python train_lstm.py
-```
-Saves to `model/lstm_model.pt`
-
-**Log at least 10+ entries to start.**
-
-5. 🔹 With Feedforward (manual input):
-bash
-Copy
-Edit
-python predict.py
-👉 It asks for your current state and predicts the probability you'll do the action.
-
-🔹 With LSTM (auto last 5 logs):
-```bash
-python lstm_predict.py
-```
-Uses your last 5 entries to predict whether you’ll do the action again.
-
-6. Optional: Use the Web Dashboard
 Launch it in your browser with:
 ```bash
 streamlit run dashboard.py
@@ -79,7 +52,7 @@ streamlit run dashboard.py
 | ------------------------- | -------------------------------------------------- |
 | `ModuleNotFoundError`     | Run `pip install` for the missing module           |
 | `lstm_model.pt` not found | Run `python train_lstm.py` to train and save model |
-| Not enough logs for LSTM  | Log at least 5+ entries with `log_entry.py`        |
+| Not enough logs for LSTM  | Log at least 10+ entries with `log_entry.py`        |
 | Streamlit won’t launch    | Make sure `streamlit` is installed, then try again |
 
 **Ensure you’re always in the root project folder `(TiresiasIQ/)` when running Python files. This avoids path issues.**
