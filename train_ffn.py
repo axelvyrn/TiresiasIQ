@@ -37,7 +37,7 @@ joblib.dump(activity_encoder, "models/activity_encoder.pkl")
 
 # Features and target
 X = df[['context_enc', 'activity_enc']].values
-y = df['completed_within_2hrs'].values
+y = df['completed_in_window'].values
 
 # Train/test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
