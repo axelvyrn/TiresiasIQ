@@ -2,3 +2,5 @@ torch
 pandas 
 scikit-learn 
 streamlit
+sentence-transformers
+joblib
