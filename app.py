@@ -7,6 +7,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import re
 from textblob import TextBlob
+from predictor import Predictor
 
 # Load spaCy model
 nlp = spacy.load('en_core_web_sm')
@@ -38,7 +39,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title('Behavior Prediction Engine (BPE 2.19)')
+st.title('Behavior Prediction Engine (BPE 2.1)')
 st.markdown('<div class="big-font">Predict future actions based on user logs, emotions, and context.</div>', unsafe_allow_html=True)
 
 with st.expander('ℹ️ How to use this app', expanded=False):
@@ -66,23 +67,22 @@ def extract_keywords_and_sentiment(text):
 
 # --- Logger Window ---
 st.header('1. Logger Window')
-col1, col2, col3 = st.columns([2,1,1])
+col1, col2 = st.columns([2,1])
 with col1:
     user_log = st.text_area('How are you feeling or what are you doing?', key='log_input')
 with col2:
-    target_action = st.text_input('Target action to predict (e.g., cry, quit, call)', key='target_action')
-with col3:
-    user_time = st.text_input('Time and day (e.g., Monday 10AM)', key='user_time')
+    user_time = st.text_input('Time and date (ISO format, e.g., 2025-06-13T10:00)', key='user_time')
 
 if st.button('Log Entry'):
     if user_log.strip() and user_time.strip():
-        keywords, polarity, subjectivity = extract_keywords_and_sentiment(user_log)
+        predictor = Predictor(None, [], [])
+        keywords, polarity, subjectivity, action = predictor.extract_features_from_text(user_log)
         c.execute('''INSERT INTO logs (timestamp, user_input, keywords, polarity, subjectivity, target_action, user_time) VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                  (datetime.now().isoformat(), user_log, keywords, polarity, subjectivity, target_action.strip().lower(), user_time.strip()))
+                  (datetime.now().isoformat(), user_log, keywords, polarity, subjectivity, action, user_time.strip()))
         conn.commit()
-        st.success(f'Logged! Extracted keywords: {keywords} | Sentiment: {polarity:.2f}')
+        st.success(f'Logged! Extracted action: {action} | Extracted keywords: {keywords} | Sentiment: {polarity:.2f}')
     else:
-        st.warning('Please enter something to log and specify the time/day.')
+        st.warning('Please enter something to log and specify the time/date in ISO format.')
 
 # --- DB Schema Upgrade ---
 c.execute('''
@@ -107,17 +107,6 @@ def get_all_keywords():
         kws = [k.strip() for k in row[0].split(',') if k.strip()]
         all_keywords.update(kws)
     return sorted(list(all_keywords))
-
-def log_to_vector(keywords, polarity, subjectivity, action, all_keywords):
-    kws = set([k.strip() for k in keywords.split(',') if k.strip()])
-    keyword_vec = [1 if k in kws else 0 for k in all_keywords]
-    # Action embedding (spaCy vector, reduced to mean for simplicity)
-    doc = nlp(action) if action else None
-    if doc and doc.vector_norm:
-        action_vec = doc.vector[:10] if len(doc.vector) >= 10 else np.pad(doc.vector, (0, 10-len(doc.vector)))
-    else:
-        action_vec = np.zeros(10)
-    return np.array(keyword_vec + [polarity, subjectivity] + list(action_vec))
 
 # --- Improved Label Generation ---
 def generate_label(target_action, user_input, keywords):
@@ -146,10 +135,10 @@ if st.button('Train Model'):
     else:
         all_keywords = get_all_keywords()
         actions = list(set([row[4] for row in data if row[4]]))
-        X = np.array([log_to_vector(row[1], row[2], row[3], row[4], all_keywords) for row in data])
-        y = np.array([generate_label(row[4], row[0], row[1]) for row in data])
+        predictor = Predictor(None, all_keywords, actions)
+        X, y = predictor.prepare_training_data(data)
         model = keras.Sequential([
-            layers.Input(shape=(len(all_keywords)+2+10,)),
+            layers.Input(shape=(X.shape[1],)),
             layers.Dense(32, activation='relu'),
             layers.Dense(1, activation='sigmoid')
         ])
@@ -162,23 +151,18 @@ if st.button('Train Model'):
         st.success('Model trained!')
 
 # --- Prediction Window ---
-from predictor import Predictor
 st.header('3. Prediction Window')
-pred_col1, pred_col2, pred_col3 = st.columns([2,1,1])
+pred_col1, pred_col2 = st.columns([2,1])
 with pred_col1:
     prediction_query = st.text_input('Ask a prediction question (e.g., What is the chance of Jack crying over his breakup in the next 1 hour?)', key='pred_query')
 with pred_col2:
-    pred_action = st.text_input('Target action to predict (e.g., cry, quit, call)', key='pred_action')
-with pred_col3:
-    pred_time = st.text_input('Time and day (e.g., Monday 10AM)', key='pred_time')
+    pred_time = st.text_input('Time and date (ISO format, e.g., 2025-06-13T23:00)', key='pred_time')
 
 if st.button('Predict'):
     if st.session_state.get('model_trained', False):
-        c.execute('SELECT user_input, keywords, polarity, subjectivity, target_action, user_time FROM logs')
-        all_logs = c.fetchall()
         predictor = Predictor(st.session_state['model'], st.session_state['all_keywords'], st.session_state['actions'])
-        prob = predictor.predict(prediction_query, pred_action, all_logs)
-        st.info(f'Prediction for "{pred_action or predictor.extract_action(prediction_query)}" at {pred_time}: {prob}%')
+        prob, action = predictor.predict(prediction_query, pred_time)
+        st.info(f'Prediction for "{action}" at {pred_time}: {prob}%')
     else:
         st.warning('Please train the model first!')
 
