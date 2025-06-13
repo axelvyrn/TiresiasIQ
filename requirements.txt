@@ -3,4 +3,5 @@ spacy
 tensorflow
 textblob
 scikit-learn
-// Install spaCy model through: python -m spacy download en_core_web_sm
+PyQt5
+pyinstaller
