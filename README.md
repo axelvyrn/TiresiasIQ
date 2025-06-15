@@ -12,14 +12,9 @@ If you are using the GUI for Windows, the interface will look as shown below
 You need Python 3.10+ (but not 3.12 as it does not support tensorflow)
 TensorFlow 2.12 is the last version officially supporting Python 3.11 on Windows.
 
-Install dependencies:
-`pip install -r requirements.txt`
-
-Install spaCy model
-`python -m spacy download en_core_web_sm`
-
-Run in streamlit:
-`python -m streamlit run app.py`
+Just run `setup.bat`, it will show any necessary logs/errors and will install the required dependencies.
+> [!IMPORTANT]
+> The first setup may take 10+ minutes if everything works smoothly
 
 **Troubleshooting:**
 ```bash
@@ -34,5 +29,5 @@ Run in streamlit:
 | **GPU-related issues** (if applicable)  | Installing `tensorflow-cpu`, sometimes the DLLs still call GPU-related imports. So install the lightweight cpu version  |
 | **Windows blocks DLL loading**          | Sometimes SmartScreen/Antivirus blocks DLL initialization silently.                             |
 
-Import spaCy English model after installing dependencies: `python -m spacy download en_core_web_sm`
-
+> [!WARNING]
+> Always remember your username, it is like your password to access your specific db, different usernames will create different dbs.
