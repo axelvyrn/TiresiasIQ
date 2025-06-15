@@ -4,4 +4,4 @@ textblob
 scikit-learn
 PyQt5
 pyinstaller
-tensorflow-cpu==2.13.0
+tensorflow-cpu==2.12.0
