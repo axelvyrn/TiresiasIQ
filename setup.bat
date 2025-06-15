@@ -37,6 +37,7 @@ REM ─── Step 4: Install Dependencies ────────────�
 echo Installing requirements...
 pip install --upgrade pip
 pip install -r requirements.txt
+python -m spacy download en_core_web_sm
 
 REM ─── Step 5: Run the App ───────────────────────────────────────────────────
 echo Starting TiresiasIQ Dashboard...
