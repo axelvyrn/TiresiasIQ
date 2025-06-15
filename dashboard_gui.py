@@ -147,6 +147,8 @@ class MainWindow(QMainWindow):
         self.initUI()
     def ensure_schema(self):
         c = self.conn.cursor()
+
+        # Create the table if it doesn't exist
         c.execute('''CREATE TABLE IF NOT EXISTS logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT,
@@ -155,10 +157,19 @@ class MainWindow(QMainWindow):
             polarity REAL,
             subjectivity REAL,
             target_action TEXT,
-            user_time TEXT,
-            username TEXT
+            user_time TEXT
+            -- deliberately omit username here
         )''')
+
+        # Now check if the 'username' column exists
+        c.execute("PRAGMA table_info(logs)")
+        columns = [col[1] for col in c.fetchall()]
+        if 'username' not in columns:
+            c.execute("ALTER TABLE logs ADD COLUMN username TEXT")
+            print("[INFO] Column 'username' added to logs table.")
+
         self.conn.commit()
+
     def initUI(self):
         # Menu bar
         menubar = self.menuBar()
