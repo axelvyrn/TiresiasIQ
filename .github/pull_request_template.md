@@ -1,5 +1,3 @@
-# 🚀 Pull Request Checklist
-
 ## 📌 Summary of the Change
 <!-- Explain what this PR adds or changes -->
 
@@ -9,6 +7,9 @@
 - [ ] Refactor (code restructuring)
 - [ ] Documentation
 - [ ] Other: ___________________
+
+## Screnshots
+<!-- Show what you changed -->
 
 ## 🧪 Tests Added
 - [ ] I’ve added tests in `test_*.py` or `*_test.py`
