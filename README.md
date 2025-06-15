@@ -13,7 +13,7 @@ Install spaCy model
 Run in streamlit:
 `python -m streamlit run app.py`
 
-Troubleshooting:
+**Troubleshooting:**
 ```bash
    ImportError: DLL load failed while importing _pywrap_tensorflow_internal:
    A dynamic link library (DLL) initialization routine failed.
@@ -26,4 +26,5 @@ Troubleshooting:
 | **GPU-related issues** (if applicable)  | Installing `tensorflow-cpu`, sometimes the DLLs still call GPU-related imports. So install the lightweight cpu version  |
 | **Windows blocks DLL loading**          | Sometimes SmartScreen/Antivirus blocks DLL initialization silently.                             |
 
+Import spaCy English model after installing dependencies: `python -m spacy download en_core_web_sm`
 
