@@ -2,7 +2,12 @@
 ---
 
 But the current demo version is stable.
-Recommended: Use the web app that can be run without any errors through `python -m streamlit run app.py`
+Recommended: Use the web app that can be run without any errors through `python -m streamlit run app.py` after installing the necessary dependencies which are which can be installed through `pip install -r requirements.txt`
+
+> [!NOTE]
+> If you don't have pip, just run the `get-pip.py` file and then install
+
+Install spaCy English model through: `python -m spacy download en_core_web_sm`
 
 ### Walkthrough for Windows GUI
 If you are using the GUI for Windows, the interface will look as shown below
