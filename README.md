@@ -17,7 +17,8 @@ Troubleshooting:
 ```bash
    ImportError: DLL load failed while importing _pywrap_tensorflow_internal:
    A dynamic link library (DLL) initialization routine failed.
-    ```
+```
+
 | Cause                                      | Explanation                                                                                     |
 |-------------------------------------------|-------------------------------------------------------------------------------------------------|
 | **Missing Visual C++ Redistributables** | TensorFlow needs specific low-level system DLLs (`MSVCP140.dll`, etc.) from Microsoft. Download the [latest version](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) of C++ and also VC++ from [here](https://aka.ms/vs/17/release/vc_redist.x64.exe)       |
