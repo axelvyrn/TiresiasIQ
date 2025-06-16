@@ -1,15 +1,19 @@
-⚠ Under construction
----
+# 🔱 TiresiasIQ v2
 
-But the current demo version is stable.
-Recommended: Use the web app that can be run without any errors through `python -m streamlit run app.py` after installing the necessary dependencies which are which can be installed through `pip install -r requirements.txt`
+The given flow depicts the pathway of data through the model
+![demo](https://github.com/user-attachments/assets/f2f139e5-39c5-490e-b2d8-75d79e356256)
+
+Stable release can be found in Releases section.
+**Recommended:** Use the web app that can be run without any errors through `python -m streamlit run app.py` after installing the necessary dependencies which are which can be installed through 
+1. `pip install -r requirements.txt`
 
 > [!NOTE]
 > If you don't have pip, just run the `get-pip.py` file and then install
 
-Install spaCy English model through: `python -m spacy download en_core_web_sm`
+2. Install spaCy English model through: `python -m spacy download en_core_web_sm`
+3. Run streamlit web app `pythom -m streamlit run app.py`
 
-### Walkthrough for Windows GUI
+## Walkthrough for Windows GUI
 If you are using the GUI for Windows, the interface will look as shown below
 
 ![image](https://github.com/user-attachments/assets/7b219caf-17bf-480f-aa34-ea930c6f6f22)
@@ -21,7 +25,8 @@ Just run `setup.bat`, it will show any necessary logs/errors and will install th
 > [!IMPORTANT]
 > The first setup may take 10+ minutes if everything works smoothly
 
-**Troubleshooting:**
+## Troubleshooting:
+
 ```bash
    ImportError: DLL load failed while importing _pywrap_tensorflow_internal:
    A dynamic link library (DLL) initialization routine failed.
