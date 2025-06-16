@@ -21,7 +21,7 @@ If you are using the GUI for Windows, the interface will look as shown below
 You need Python 3.10+ (but not 3.12 as it does not support tensorflow)
 TensorFlow 2.12 is the last version officially supporting Python 3.11 on Windows.
 
-Just run `setup.bat`, it will show any necessary logs/errors and will install the required dependencies.
+Just run `setup.bat`, it will show any necessary logs/errors and will install the required dependencies as well as start the Predictor Environment
 > [!IMPORTANT]
 > The first setup may take 10+ minutes if everything works smoothly
 
