@@ -45,5 +45,5 @@ Just run `setup.bat`, it will show any necessary logs/errors and will install th
 ## License
 
 This project is licensed under the TiresiasIQ Personal Use License (T-PUL) v1.0.  
-See [LICENSE.txt](./LICENSE.txt) for full terms.  
+See [LICENSE.txt](https://github.com/axelvyrn/TiresiasIQ?tab=License-1-ov-file) for full terms.  
 **Use it, don't abuse it.**
