@@ -3,8 +3,9 @@
 The given flow depicts the pathway of data through the model
 ![demo](https://github.com/user-attachments/assets/f2f139e5-39c5-490e-b2d8-75d79e356256)
 
-Stable release can be found in Releases section.
-**Recommended:** Use the web app that can be run without any errors through `python -m streamlit run app.py` after installing the necessary dependencies which are which can be installed through 
+Stable releases can be found in Releases section.
+
+**Recommended:** Use the web app that can be run without any errors through `python -m streamlit run app.py` after installing the necessary dependencies (Python 3.13 is required) which are which can be installed through 
 1. `pip install -r requirements.txt`
 
 > [!NOTE]
