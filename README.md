@@ -1,10 +1,36 @@
 # 🔱 TiresiasIQ v2
 
 The given flow depicts the pathway of data through the model
-![demo](https://github.com/user-attachments/assets/f2f139e5-39c5-490e-b2d8-75d79e356256)
+```mermaid
+---
+title: Data Flow in TiresiasIQ v2
+---
+
+flowchart TD
+    Start -->A
+    A[User Logs Input] -->|"I feel empty after the breakup"| B[NLP Feature Extractor]
+    B --> C[["Keywords (Entities, Lemmas)"]]
+    B --->D[["Sentiment (Polarity, Subjectivity)"]]
+    B --->E[["`Action Verb Extraction 
+    via VERB/NOUN Lemmas`"]]
+    E --> F[(Embeds stored in sqlite3 database)]
+    C --> |Hours, Weekdays|G["Temporal Features Extractor (Experimental)"]
+    D --> G
+    E --> G
+    G --> |"What is the probability of me crying at 11PM?"|H["`Features Vector Builder
+(Keywords + Sentiment + Action Embeddings + Time)`"]
+    F --> H
+    H --> I{{"`FeedForward Neural Network
+keras.Sequential([
+Dense(32, relu) > Dense (1, σ)
+])`"}}
+    I --> J@{ shape: das, label: "Prediction Score %" }
+    J --> K[/"Cry 78% at 11PM"/]
+    K --> Stop
+```
 
 Stable releases can be found in Releases section.
-
+    
 **Recommended:** Use the web app that can be run without any errors through `python -m streamlit run app.py` after installing the necessary dependencies (Python 3.13 is required) which are which can be installed through 
 1. `pip install -r requirements.txt`
 
