@@ -80,24 +80,10 @@ if st.button('Log Entry'):
         c.execute('''INSERT INTO logs (timestamp, user_input, keywords, polarity, subjectivity, target_action, user_time) VALUES (?, ?, ?, ?, ?, ?, ?)''',
                   (datetime.now().isoformat(), user_log, keywords, polarity, subjectivity, action, user_time.strip()))
         conn.commit()
-        st.success(f'Logged! Extracted action: {action} | Extracted keywords: {keywords} | Sentiment: {polarity:.2f}')
+        message = f'Logged! Extracted action: {action} | Extracted keywords: {keywords} | Sentiment: {polarity:.2f}'
+        st.success(message)
     else:
         st.warning('Please enter something to log and specify the time/date in ISO format.')
-
-# --- DB Schema Upgrade ---
-c.execute('''
-CREATE TABLE IF NOT EXISTS logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT,
-    user_input TEXT,
-    keywords TEXT,
-    polarity REAL,
-    subjectivity REAL,
-    target_action TEXT,
-    user_time TEXT
-)
-''')
-conn.commit()
 
 # --- Feature Engineering ---
 def get_all_keywords():
@@ -173,3 +159,17 @@ if st.checkbox('Show logged entries'):
     rows = c.fetchall()
     for row in rows:
         st.write(f"[{row[0]}] {row[1]} (Keywords: {row[2]}) | Sentiment: {row[3]:.2f} | Target: {row[5]} | Time: {row[6]}")
+
+    # Reset database button
+    if st.button('Reset Database', type='secondary'):
+        try:
+            c.execute('DELETE FROM logs')
+            conn.commit()
+            # Reset in-memory training artifacts
+            st.session_state['model_trained'] = False
+            st.session_state['model'] = None
+            st.session_state['all_keywords'] = []
+            st.session_state['actions'] = []
+            st.success('Database cleared successfully. Model state reset.')
+        except Exception as e:
+            st.error(f'Failed to reset database: {e}')

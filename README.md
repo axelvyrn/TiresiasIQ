@@ -29,34 +29,49 @@ Dense(32, relu) > Dense (1, σ)
     K --> Stop
 ```
 
-Stable releases can be found in Releases section.
-    
-**Recommended:** Use the web app that can be run without any errors through `python -m streamlit run app.py` after installing the necessary dependencies (Python 3.13 is required) which are which can be installed through 
-1. `pip install -r requirements.txt`
+## Quick Start
+
+**Recommended:** Use the web app that can be run without any errors through `python -m streamlit run app.py` after installing the necessary dependencies.
+
+### Prerequisites
+- Python 3.9+ (Python 3.11 is recommended)
+- pip package manager
+
+### Installation
+1. Make a venv:
+```python
+python3.11 -m venv ~/tiq-env
+source ~/tiq-env/bin/activate
+pip install --upgrade pip
+```
+replace 'python3.11' with your installed python version or 'python' if that is your default compiler and is >3.9
+
+2. Install dependencies: `pip install -r requirements.txt`
+
+3. Install spaCy English model: `python -m spacy download en_core_web_sm`
+
+4. Run the Streamlit web app: 
+   - **Option 1**: `python run.py` (recommended)
+   - **Option 2**: `python -m streamlit run app.py`
 
 > [!NOTE]
-> If you don't have pip, just run the `get-pip.py` file and then install
+> If you don't have pip, just run the `get-pip.py` file and then install the requirements
 
-2. Install spaCy English model through: `python -m spacy download en_core_web_sm`
-3. Run streamlit web app `pythom -m streamlit run app.py`
+## Web Dashboard Features
 
-## Walkthrough for Windows GUI
-If you are using the GUI for Windows, the interface will look as shown below
+The Streamlit web dashboard provides:
+- **Logger Window**: Log your feelings, actions, and emotions with automatic keyword extraction
+- **Model Training**: Train the prediction model with your logged data
+- **Prediction Window**: Ask natural language questions about future behaviors
+- **Database Viewer**: View and manage all your logged entries
 
-![image](https://github.com/user-attachments/assets/7b219caf-17bf-480f-aa34-ea930c6f6f22)
+## Troubleshooting
 
-You need Python 3.10+ (but not 3.12 as it does not support tensorflow)
-TensorFlow 2.12 is the last version officially supporting Python 3.11 on Windows.
-
-Just run `setup.bat`, it will show any necessary logs/errors and will install the required dependencies as well as start the Predictor Environment
-> [!IMPORTANT]
-> The first setup may take 10+ minutes if everything works smoothly
-
-## Troubleshooting:
+### Common Issues
 
 ```bash
-   ImportError: DLL load failed while importing _pywrap_tensorflow_internal:
-   A dynamic link library (DLL) initialization routine failed.
+ImportError: DLL load failed while importing _pywrap_tensorflow_internal:
+A dynamic link library (DLL) initialization routine failed.
 ```
 
 | Cause                                      | Explanation                                                                                     |
@@ -66,8 +81,13 @@ Just run `setup.bat`, it will show any necessary logs/errors and will install th
 | **GPU-related issues** (if applicable)  | Installing `tensorflow-cpu`, sometimes the DLLs still call GPU-related imports. So install the lightweight cpu version  |
 | **Windows blocks DLL loading**          | Sometimes SmartScreen/Antivirus blocks DLL initialization silently.                             |
 
-> [!WARNING]
-> Always remember your username, it is like your password to access your specific db, different usernames will create different dbs.
+## Project Structure
+
+- `app.py` - Main Streamlit web application
+- `predictor.py` - Core prediction engine with NLP and ML capabilities
+- `behavior.db` - SQLite database for storing user logs and training data
+- `requirements.txt` - Python dependencies
+- `run.py` - Simple startup script for the Streamlit app
 
 ## License
 
