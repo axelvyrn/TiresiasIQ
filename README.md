@@ -48,7 +48,7 @@ replace 'python3.11' with your installed python version or 'python' if that is y
 
 2. Install dependencies: `pip install -r requirements.txt`
 
-3. Install spaCy English model: `python -m spacy download en_core_web_sm`
+3. Install spaCy English model: `python -m spacy download en_core_web_md`
 
 4. Run the Streamlit web app: 
    - **Option 1**: `python run.py` (recommended)
