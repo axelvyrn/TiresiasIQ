@@ -115,12 +115,21 @@ As of v2.1, individual GUI support for different OSes have been removed. Only th
 
 ### Installation
 1. Make a venv:
+On mac:
 ```python
 python3.11 -m venv ~/tiq-env
 source ~/tiq-env/bin/activate
 pip install --upgrade pip
 ```
 replace 'python3.11' with your installed python version or 'python' if that is your default compiler and is >3.9
+
+On Windows:
+```
+cd C:\path\to\your\project
+python -m venv tiq-env
+tiq-env\Scripts\activate
+```
+deactivate with `deactivate`
 
 2. Install dependencies: `pip install -r requirements.txt`
 
