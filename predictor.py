@@ -8,7 +8,7 @@ Features added / changed compared to v2.1:
 - Simple drift detector (Page-Hinkley style) per action to flag when retraining is recommended
 - Persistent feature-space: `all_keywords` and `actions` are authoritative and kept fixed unless explicitly expanded
 - Backwards-compatible API:
-    - prepare_training_data(data) -> X, y  (for initial batch training)
+    - update_running_status(data) -> X, y  (for initial batch training)
     - predict(query, pred_time, user_id=None) -> PredictResult
     - update_with_log(log_row, user_id=None)  # online-adapt on new single row
 
