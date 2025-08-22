@@ -52,7 +52,7 @@ replace 'python3.11' with your installed python version or 'python' if that is y
 
 4. Run the Streamlit web app: 
    - **Option 1**: `python run.py` (recommended)
-   - **Option 2**: `python -m streamlit run app.py`
+   - **Option 2**: `streamlit run app.py`
 
 > [!NOTE]
 > If you don't have pip, just run the `get-pip.py` file and then install the requirements
