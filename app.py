@@ -33,7 +33,7 @@ conn.commit()
 
 # --- Streamlit Setup ---
 st.set_page_config(page_title="Behavior Prediction Engine", layout="centered")
-st.title('Behavior Prediction Engine (BPE 2.2 - fixed)')
+st.title('Behavior Prediction Engine (BPE 3.0)')
 
 # --- Keyword + Sentiment ---
 def extract_keywords_and_sentiment(text):
