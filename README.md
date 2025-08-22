@@ -1,6 +1,6 @@
 # 🔱 TiresiasIQ v3
 
-The given flow depicts the pathway of data through the model
+The given flow depicts the pathway of data through the model (zoom to get a better view)
 ```mermaid
 ---
 title: Data Flow in TiresiasIQ v2
