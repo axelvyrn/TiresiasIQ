@@ -4,9 +4,9 @@ Imagine if your computer could guess what you’re about to do next. Not in a cr
 
 That’s what TiresiasIQ does. It looks at your past activity—your logs, your routines, your timing—and learns your patterns. Then it uses that knowledge to predict your future actions.
 
-- If you usually code late at night, it’ll catch that.
-- If you tend to open the same app after checking your email, it’ll notice.
-- If your schedule changes, it adapts.
+|                 TiresiasIQ               | Quick Rundown |
+|------------------------------------------|----------------|
+|<img width="410" height="410" alt="tiresiasiq" src="https://github.com/user-attachments/assets/6a06ff6b-dfcc-4e9c-8aa5-7f37bc0bc25d" /> |<ul><li> If you usually code late at night, it’ll catch that.</li><li> If you tend to open the same app after checking your email, it’ll notice.</li><li>If your schedule changes, it adapts.</li><li>And <b>most importantly</b> depending on whatever, it learnt, if you ask what might come next in your schedule, what email you might check next, when you might not want to code, it will seriously tell you whether and why you will do it 😏</li></ul> |
 
 It’s not just reacting, it’s thinking one step ahead.
 Thus, **TiresiasIQ** is an experimental AI engine that learns your daily behavior patterns and predicts future actions from natural language input. Inspired by the mythic oracle **Tiresias**, this project transforms your everyday logs into **actionable foresight** using neural networks.  
@@ -25,7 +25,7 @@ Unlike fragments, attempts, and adjacent projects, **TiresiasIQ** is a fully ope
 | Daily self-logging of tasks | ✅ | ❌ (mostly passive tracking) |
 | Action completion window prediction (e.g. 2 hours) | ✅ | ❌ |
 | Neural nets (FFN, LSTM) for personal action forecasting | ✅ | ❌ |
-| Natural Language Interpretation of Tasks | ✅ (v2) | ❌ (rare or too general) |
+| Natural Language Interpretation of Tasks | ✅ (v2+) | ❌ (rare or too general) |
 | Tailored to one individual for personal feedback loop | ✅ | ❌ (most are generalized) |
 | CLI logger + full dashboard with predictions | ✅ | ❌ |
 
@@ -209,7 +209,7 @@ A dynamic link library (DLL) initialization routine failed.
 | Cause                                      | Explanation                                                                                     |
 |-------------------------------------------|-------------------------------------------------------------------------------------------------|
 | **Missing Visual C++ Redistributables** | TensorFlow needs specific low-level system DLLs (`MSVCP140.dll`, etc.) from Microsoft. Download the [latest version](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) of C++ and also VC++ from [here](https://aka.ms/vs/17/release/vc_redist.x64.exe)       |
-| **Incompatible TensorFlow version**     | If you mix TensorFlow versions with Python versions it doesn't support, it breaks like this.    |
+| **Incompatible TensorFlow version**     | If you mix TensorFlow versions with Python versions it doesn't support, it breaks like this. Make sure you use install the one in the requirements    |
 | **GPU-related issues** (if applicable)  | Installing `tensorflow-cpu`, sometimes the DLLs still call GPU-related imports. So install the lightweight cpu version  |
 | **Windows blocks DLL loading**          | Sometimes SmartScreen/Antivirus blocks DLL initialization silently.                             |
 
