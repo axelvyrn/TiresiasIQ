@@ -161,14 +161,15 @@ TiresiasIQ v3 is an **adaptive hybrid predictive model** that combines ML predic
 ### 1. Hybrid Prediction
 - Blends three sources of information:
   - **Model probability** (`w_model`)
-  - **Temporal priors** (`w_temporal`): hour, day-of-week, weekend effects, and recency
+  - **Temporal priors** (`w_temporal`): hour, day-of-week, weekend effects, recency, month, ISO-week, and holiday boosts
   - **Semantic similarity** (`w_semantic`): cosine similarity with past context
-- Configurable blending weights for fine-grained control.
+- Configurable blending weights and optional online dynamic adjustment.
 
 ### 2. Online Learning & Adaptation
 - `update_with_log(...)` allows **incremental updates** without full retraining.
 - Updates per-action **priors**, **context centroids**, and **short-term memory**.
-- Maintains **per-user memory** for personalized predictions.
+- Maintains **per-user memory** for personalized predictions and applies a mild per-user cycle modifier.
+- Optional **dynamic weight adjustment** (passive-aggressive style) that increases margin for correct action vs competitors.
 
 ### 3. Short-Term Retrieval
 - Maintains a **recent log memory** (configurable size).
@@ -176,7 +177,8 @@ TiresiasIQ v3 is an **adaptive hybrid predictive model** that combines ML predic
 
 ### 4. Drift Detection
 - **Page-Hinkley style detector** per action to flag potential data drift.
-- Allows external retraining triggers when user behavior changes.
+- On drift, predictor persists drift counts and lightly nudges weights toward temporal reliability.
+- For local usage, run `python scripts/evaluate_drift.py` at least twice weekly to summarize drift and decide on retraining.
 
 ### 5. Action Normalization & Extraction
 - Extracts **core verbs** from text, handles **negation** and **particles**.
@@ -205,6 +207,34 @@ TiresiasIQ v3 is an **adaptive hybrid predictive model** that combines ML predic
 TiresiasIQ v3 combines **ML, temporal reasoning, semantic embeddings, and short-term episodic memory** to deliver **adaptive, context- and time-aware action prediction** with incremental learning and drift detection.
 
 ---
+
+## Practical Guidance
+
+- Dynamic weights
+  - Keep `dynamic_weights=true` initially. If you notice oscillation, reduce `weight_lr` (e.g., 0.02) or increase `weight_margin` (e.g., 0.02).
+  - Set `weight_min` to prevent any component from collapsing to 0; default 0.05 is conservative.
+- Temporal decay
+  - Use `decay_mode="exp"` for fast responsiveness (recent behavior dominates).
+  - Use `decay_mode="power"` with `recency_alpha≈0.75` for longer memory tails (helps with periodic habits).
+- Seasonality & holidays
+  - Keep `enable_seasonality=true`. Supply holidays as `YYYY-MM-DD` dates if you want holiday boosts.
+- Per-user cycles
+  - Leave `enable_user_cycles=true` for mild personalization.
+- Drift checks
+  - Run `python scripts/evaluate_drift.py` at least twice weekly. If it reports thresholds exceeded, consider retraining.
+
+## Environment variables (.env/.env.local)
+
+Create a `.env` (and optionally `.env.local`) at the project root with recommended values:
+
+```ini
+TIQ_DRIFT_ACTION_THRESHOLD=3
+TIQ_DRIFT_GLOBAL_THRESHOLD=5
+TIQ_DRIFT_WINDOW_DAYS=14
+```
+
+- `.env.local` can override values for a single machine without committing them.
+- The drift script loads `.env` and then `.env.local` (if present) before using defaults.
 
 ## Troubleshooting
 

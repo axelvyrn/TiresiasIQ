@@ -1,0 +1,31 @@
+name: Drift evaluation (scheduled)
+
+on:
+  # Local-only usage: keep manual trigger for convenience; scheduled runs removed.
+  workflow_dispatch:
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run drift evaluation
+        env:
+          TIQ_DRIFT_ACTION_THRESHOLD: "3"
+          TIQ_DRIFT_GLOBAL_THRESHOLD: "5"
+          TIQ_DRIFT_WINDOW_DAYS: "14"
+        run: |
+          python scripts/evaluate_drift.py
+
