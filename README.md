@@ -1,5 +1,68 @@
 # 🔱 TiresiasIQ v3
 
+Imagine if your computer could guess what you’re about to do next. Not in a creepy way, but in a “I’ve noticed your habits, let me help” way.
+
+That’s what TiresiasIQ does. It looks at your past activity—your logs, your routines, your timing—and learns your patterns. Then it uses that knowledge to predict your future actions.
+
+- If you usually code late at night, it’ll catch that.
+- If you tend to open the same app after checking your email, it’ll notice.
+- If your schedule changes, it adapts.
+
+It’s not just reacting, it’s thinking one step ahead.
+Thus, **TiresiasIQ** is an experimental AI engine that learns your daily behavior patterns and predicts future actions from natural language input. Inspired by the mythic oracle **Tiresias**, this project transforms your everyday logs into **actionable foresight** using neural networks.  
+
+Yes, you heard it right — **TiresiasIQ is a Human Behavior Prediction Engine**, the first of its kind to ever be created.  
+It’s on GitHub and available to you through web browsers. 
+
+Unlike fragments, attempts, and adjacent projects, **TiresiasIQ** is a fully open-source system tailored to **personal behavior prediction** — combining daily habit logging, time-window-based neural estimation, natural language input, and action forecasting into one loop.  
+
+---
+
+## Why TiresiasIQ is Different
+
+| Feature | TiresiasIQ | Existing Systems |
+|---------|------------|------------------|
+| Daily self-logging of tasks | ✅ | ❌ (mostly passive tracking) |
+| Action completion window prediction (e.g. 2 hours) | ✅ | ❌ |
+| Neural nets (FFN, LSTM) for personal action forecasting | ✅ | ❌ |
+| Natural Language Interpretation of Tasks | ✅ (v2) | ❌ (rare or too general) |
+| Tailored to one individual for personal feedback loop | ✅ | ❌ (most are generalized) |
+| CLI logger + full dashboard with predictions | ✅ | ❌ |
+
+---
+
+## Related Projects (and why TiresiasIQ is not yet beatable)
+
+- **Google Timeline + Activity Recognition**  
+  *What it does:* Logs where you go, what you do on your phone.  
+  *Why it’s different:* It recognizes, not predicts — and it’s closed-source.  
+
+- **Replika / AI Companions**  
+  *What they do:* Chat-based behavior adaptation.  
+  *Why it’s different:* They respond emotionally, not forecast rational behavior based on past logs.  
+
+- **Apple / Fitbit HealthKit + Wellness AI**  
+  *What they do:* Predict when to stand, walk, sleep, etc.  
+  *Why it’s different:* Predicts biological rhythm, not cognitive decision/action-based tasks.  
+
+- **Habitica / Streak Apps**  
+  *What they do:* Habit gamification, track whether you did something.  
+  *Why it’s different:* No real AI prediction. Just behavior encouragement.  
+
+- **Smart Personal Assistants (e.g., Siri Shortcuts, Alexa Routines)**  
+  *What they do:* Suggest actions at certain times/locations.  
+  *Why it’s different:* Hardcoded patterns. No neural learning, no contextual understanding.  
+
+- **nudge.ai, x.ai (now defunct)**  
+  *What they did:* Predict best time to contact people, send reminders.  
+  *Why it’s different:* Built for business & CRM, not personal task-life modeling.  
+
+---
+
+TiresiasIQ isn’t about tracking. It’s about **forecasting your next move**.  
+Think of it as your **personal oracle** — but backed by neural networks instead of myth.
+
+
 The given flow depicts the model architecture in a simplified manner
 <img width="1262" height="684" alt="diagram-export-24-8-2025-10_48_55-am" src="https://github.com/user-attachments/assets/1c7279d7-4474-4aaf-93d3-516f4fa77bd9" />
 
