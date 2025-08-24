@@ -24,6 +24,9 @@ from __future__ import annotations
 import math
 import time
 import re
+import os
+import json
+from collections import deque
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Optional, Any
 
@@ -145,7 +148,11 @@ class PredictResult:
 class Predictor:
     def __init__(self, model=None, all_keywords: Optional[List[str]] = None, actions: Optional[List[str]] = None,
                  pca_components: int = 16, w_model: float = 0.6, w_temporal: float = 0.25, w_semantic: float = 0.15,
-                 recency_tau_days: float = 21.0, short_memory_size: int = 200):
+                 recency_tau_days: float = 21.0, short_memory_size: int = 200,
+                 dynamic_weights: bool = True, weight_lr: float = 0.05, weight_margin: float = 0.01, weight_min: float = 0.05,
+                 decay_mode: str = 'exp', recency_alpha: float = 0.75,
+                 enable_seasonality: bool = True, enable_holidays: bool = True, holidays: Optional[List[str]] = None,
+                 enable_user_cycles: bool = True):
         # model, fixed feature-space
         self.model = model
         self.all_keywords = [k.strip().lower() for k in (all_keywords or [])]
@@ -154,6 +161,13 @@ class Predictor:
         # blending weights
         s = max(1e-9, w_model + w_temporal + w_semantic)
         self.w_model = w_model / s; self.w_temporal = w_temporal / s; self.w_semantic = w_semantic / s
+
+        # dynamic weight learning params
+        self.dynamic_weights = bool(dynamic_weights)
+        self.weight_lr = float(weight_lr)
+        self.weight_margin = float(weight_margin)
+        self.weight_min = float(weight_min)
+        self._weight_history: deque = deque(maxlen=200)
 
         # pca for reducing embeddings when needed
         self.pca_components = max(1, int(pca_components))
@@ -178,9 +192,34 @@ class Predictor:
 
         # drift detectors per action
         self.drift_detectors: Dict[str, PageHinkley] = {a: PageHinkley() for a in self.actions}
+        self._drift_counts: Dict[str, Dict[str, Any]] = {}
 
-        # recency
+        # recency & decay configuration
         self.recency_tau_days = float(max(1.0, recency_tau_days))
+        self.decay_mode = str(decay_mode)
+        self.recency_alpha = float(recency_alpha)
+
+        # seasonality & holidays
+        self.enable_seasonality = bool(enable_seasonality)
+        self.enable_holidays = bool(enable_holidays)
+        self.holidays = set()
+        if holidays:
+            for h in holidays:
+                try:
+                    # store only the date part (YYYY-MM-DD)
+                    self.holidays.add(str(h)[:10])
+                except Exception:
+                    continue
+
+        # user cycles
+        self.enable_user_cycles = bool(enable_user_cycles)
+
+        # data dir for drift persistence
+        self._data_dir = os.path.join(os.path.dirname(__file__), 'data')
+        try:
+            os.makedirs(self._data_dir, exist_ok=True)
+        except Exception:
+            pass
 
         # cache for embeddings
         self._embed_cache: Dict[str, np.ndarray] = {}
@@ -267,11 +306,19 @@ class Predictor:
         a = normalize_action(action)
         if a in self.actions: return a
         self.actions.append(a)
-        # init priors
-        self.priors_[a] = {"hour_hist": np.ones(24, dtype=float), "dow_hist": np.ones(7, dtype=float), "weekend_rate": 0.5}
+        # init priors with hierarchical memory structures
+        self.priors_[a] = {
+            "hour_hist": np.ones(24, dtype=float),
+            "dow_hist": np.ones(7, dtype=float),
+            "month_hist": np.ones(12, dtype=float),
+            "week_hist": np.ones(53, dtype=float),  # ISO weeks 1..53
+            "weekend_rate": 0.5,
+            "holiday_rate": 0.5,
+        }
         self.context_centroid_[a] = np.zeros(self.pca_components, dtype=float)
         self.last_seen_day_[a] = -1e12
         self.drift_detectors[a] = PageHinkley()
+        self._drift_counts.setdefault(a, {"count": 0, "last_ts": 0})
         return a
 
     def _update_priors_online(self, action: str, user_time: str, context_vec: np.ndarray):
@@ -280,21 +327,36 @@ class Predictor:
         try:
             dt = parser.isoparse(user_time)
             hour = dt.hour; dow = dt.weekday(); is_weekend = int(dow >= 5); day_float = dt.timestamp() / 86400.0
+            month = dt.month  # 1..12
+            iso_week = getattr(dt.isocalendar(), 'week', None)
+            if iso_week is None:
+                # Python <3.9 compat
+                iso_week = dt.isocalendar()[1]
+            week_idx = max(1, min(53, int(iso_week))) - 1
+            is_holiday = 1 if (str(dt.date()) in self.holidays) else 0
         except Exception:
-            hour = 0; dow = 0; is_weekend = 0; day_float = None
+            hour = 0; dow = 0; is_weekend = 0; day_float = None; month = 1; week_idx = 0; is_holiday = 0
         pri = self.priors_.get(a)
         if pri is None:
-            pri = {"hour_hist": np.ones(24, dtype=float), "dow_hist": np.ones(7, dtype=float), "weekend_rate": 0.5}
+            pri = {"hour_hist": np.ones(24, dtype=float), "dow_hist": np.ones(7, dtype=float),
+                   "month_hist": np.ones(12, dtype=float), "week_hist": np.ones(53, dtype=float),
+                   "weekend_rate": 0.5, "holiday_rate": 0.5}
             self.priors_[a] = pri
         # update histograms (simple additive smoothing)
         pri['hour_hist'][hour] += 1.0
         pri['dow_hist'][dow] += 1.0
-        # weekend counters encoded via weekend_rate moving average
+        pri['month_hist'][max(0, min(11, month - 1))] += 1.0
+        pri['week_hist'][week_idx] += 1.0
+        # weekend & holiday moving averages
         prev_wr = pri.get('weekend_rate', 0.5)
         pri['weekend_rate'] = 0.95 * prev_wr + 0.05 * float(is_weekend)
+        prev_hr = pri.get('holiday_rate', 0.5)
+        pri['holiday_rate'] = 0.95 * prev_hr + 0.05 * float(is_holiday)
         # normalize histograms
-        pri['hour_hist'] = pri['hour_hist'] / np.sum(pri['hour_hist'])
-        pri['dow_hist'] = pri['dow_hist'] / np.sum(pri['dow_hist'])
+        pri['hour_hist'] = pri['hour_hist'] / max(1.0, np.sum(pri['hour_hist']))
+        pri['dow_hist'] = pri['dow_hist'] / max(1.0, np.sum(pri['dow_hist']))
+        pri['month_hist'] = pri['month_hist'] / max(1.0, np.sum(pri['month_hist']))
+        pri['week_hist'] = pri['week_hist'] / max(1.0, np.sum(pri['week_hist']))
         # update centroid via exponential moving average
         prev_cent = self.context_centroid_.get(a)
         if prev_cent is None or not np.any(prev_cent):
@@ -309,8 +371,8 @@ class Predictor:
         err = 1.0 - td
         detector = self.drift_detectors.get(a)
         if detector and detector.add(err):
-            # signal drift - for now we log; external system can trigger full retrain
-            print(f"[drift] detected for action {a}")
+            # signal drift
+            self._on_drift_detected(a)
 
     # --------------------------- update with a new log (online) ---------------------------
     def update_with_log(self, log_row: Tuple[str, str, float, float, str, str], user_id: Optional[str] = None):
@@ -339,6 +401,12 @@ class Predictor:
             self._update_running_stats(feat)
         except Exception:
             pass
+        # dynamic weight update using the newly observed ground truth
+        try:
+            if self.dynamic_weights and len(self.actions) >= 2:
+                self._update_weights_online(true_action=action, query_text=user_input, pred_time=user_time)
+        except Exception:
+            pass
 
     # --------------------------- temporal & semantic priors ---------------------------
     def _temporal_prior(self, action: str, pred_iso: str) -> float:
@@ -350,8 +418,35 @@ class Predictor:
         h_prob = float(pri['hour_hist'][hour]) if 0 <= hour < 24 else (1.0/24.0)
         d_prob = float(pri['dow_hist'][dow]) if 0 <= dow < 7 else (1.0/7.0)
         temporal_score = 0.6 * h_prob + 0.4 * d_prob
+        # weekend adjustment
         if tb['is_weekend'] > 0.5:
             temporal_score *= (1.0 + 0.3 * (pri.get('weekend_rate', 0.5) - 0.5))
+        # seasonality: month and ISO week
+        if self.enable_seasonality:
+            try:
+                from dateutil import parser
+                pred_dt = parser.isoparse(pred_iso)
+                month = pred_dt.month
+                iso_week = getattr(pred_dt.isocalendar(), 'week', None)
+                if iso_week is None:
+                    iso_week = pred_dt.isocalendar()[1]
+                w_idx = max(1, min(53, int(iso_week))) - 1
+                m_prob = float(pri.get('month_hist', np.ones(12)/12.0)[month-1])
+                w_prob = float(pri.get('week_hist', np.ones(53)/53.0)[w_idx])
+                # blend into temporal_score
+                temporal_score = 0.5 * temporal_score + 0.3 * m_prob + 0.2 * w_prob
+            except Exception:
+                pass
+        # holiday awareness
+        if self.enable_holidays:
+            try:
+                from dateutil import parser
+                pred_dt = parser.isoparse(pred_iso)
+                if str(pred_dt.date()) in self.holidays:
+                    temporal_score *= (1.0 + 0.3 * (pri.get('holiday_rate', 0.5) - 0.5))
+            except Exception:
+                pass
+        # recency decay
         last_day = self.last_seen_day_.get(action)
         if last_day is not None:
             from dateutil import parser
@@ -359,8 +454,11 @@ class Predictor:
                 pred_dt = parser.isoparse(pred_iso)
                 pred_day = pred_dt.timestamp() / 86400.0
                 delta_days = max(0.0, pred_day - last_day)
-                recency = math.exp(-delta_days / self.recency_tau_days)
-                temporal_score = 0.6 * temporal_score + 0.4 * recency
+                if self.decay_mode == 'power':
+                    recency = 1.0 / pow(1.0 + delta_days, max(0.1, self.recency_alpha))
+                else:
+                    recency = math.exp(-delta_days / self.recency_tau_days)
+                temporal_score = 0.7 * temporal_score + 0.3 * recency
             except Exception:
                 pass
         return float(np.clip(temporal_score, 0.0, 1.0))
@@ -375,6 +473,26 @@ class Predictor:
         c = cosine(qv[:self.pca_components] if qv.shape[0] >= self.pca_components else qv, av[:self.pca_components] if av.shape[0] >= self.pca_components else av)
         return float((c + 1.0) / 2.0)
 
+    # user-specific cycle modifier
+    def _user_modifier(self, user_id: Optional[str], action: str, pred_iso: str) -> float:
+        if not self.enable_user_cycles or not user_id:
+            return 1.0
+        um = self.user_memory.get(user_id)
+        if not um:
+            return 1.0
+        cnt = float(um.get('counts', {}).get(action, 0))
+        last_ts = um.get('last_seen', {}).get(action)
+        rec = 1.0
+        if last_ts:
+            delta_days = max(0.0, (time.time() - last_ts) / 86400.0)
+            if self.decay_mode == 'power':
+                rec = 1.0 / pow(1.0 + delta_days, max(0.1, self.recency_alpha))
+            else:
+                rec = math.exp(-delta_days / self.recency_tau_days)
+        # map counts to [0.95, 1.05]
+        base = 1.0 + 0.05 * (1.0 - math.exp(-cnt / 10.0))
+        return float(np.clip(base * (0.9 + 0.2 * rec), 0.9, 1.1))
+
     # --------------------------- prediction ---------------------------
     def predict(self, query: str, pred_time: str, user_id: Optional[str] = None) -> PredictResult:
         keywords, polarity, subjectivity, extracted_action, features = self.extract_features_from_text(query)
@@ -385,7 +503,9 @@ class Predictor:
             # apply running scaler transform if available
             x_scaled = self._transform_with_running(x) if self.scaler_mean is not None else x
             p_model = float(self.model.predict(x_scaled.reshape(1, -1))[0][0]) if self.model is not None else 0.5
-            t_prior = self._temporal_prior(a, pred_time)
+            t_base = self._temporal_prior(a, pred_time)
+            u_mod = self._user_modifier(user_id, a, pred_time)
+            t_prior = float(np.clip(t_base * u_mod, 0.0, 1.0))
             s_prior = self._semantic_prior(a, query)
             blended = self.w_model * p_model + self.w_temporal * t_prior + self.w_semantic * s_prior
             candidates.append((a, p_model, t_prior, s_prior, blended))
@@ -410,7 +530,9 @@ class Predictor:
             x_e_tmp = self.log_to_vector(keywords, polarity, subjectivity, extracted_action, pred_time)
             x_e_tmp_scaled = self._transform_with_running(x_e_tmp) if self.scaler_mean is not None else x_e_tmp
             p_e_tmp = float(self.model.predict(x_e_tmp_scaled.reshape(1, -1))[0][0]) if self.model is not None else 0.5
-            t_e_tmp = self._temporal_prior(extracted_action, pred_time)
+            t_e_base = self._temporal_prior(extracted_action, pred_time)
+            u_mod_e = self._user_modifier(user_id, extracted_action, pred_time)
+            t_e_tmp = float(np.clip(t_e_base * u_mod_e, 0.0, 1.0))
             s_e_tmp = self._semantic_prior(extracted_action, query)
             b_e_tmp = self.w_model * p_e_tmp + self.w_temporal * t_e_tmp + self.w_semantic * s_e_tmp
             candidates.append((extracted_action, p_e_tmp, t_e_tmp, s_e_tmp, b_e_tmp))
@@ -424,7 +546,9 @@ class Predictor:
                 x_e = self.log_to_vector(keywords, polarity, subjectivity, extracted_action, pred_time)
                 x_e_scaled = self._transform_with_running(x_e) if self.scaler_mean is not None else x_e
                 p_e = float(self.model.predict(x_e_scaled.reshape(1, -1))[0][0]) if self.model is not None else 0.5
-                t_e = self._temporal_prior(extracted_action, pred_time)
+                t_e_base = self._temporal_prior(extracted_action, pred_time)
+                u_mod_e = self._user_modifier(user_id, extracted_action, pred_time)
+                t_e = float(np.clip(t_e_base * u_mod_e, 0.0, 1.0))
                 s_e = self._semantic_prior(extracted_action, query)
                 b_e = self.w_model * p_e + self.w_temporal * t_e + self.w_semantic * s_e
                 extracted_scores = {"action": extracted_action, "model_score": p_e, "temporal_score": t_e, "semantic_score": s_e, "blended": b_e}
@@ -441,6 +565,80 @@ class Predictor:
             "extracted_prediction": extracted_scores,
         }
         return PredictResult(probability=float(best[4]), action=best[0], extracted_action=extracted_action, top_candidates=topk, features=features, details=details)
+
+    # --------------------------- dynamic weights ---------------------------
+    def _update_weights_online(self, true_action: str, query_text: str, pred_time: str):
+        """
+        Passive-aggressive style online update on [w_model, w_temporal, w_semantic]
+        to increase the margin between the true action and the top competing action.
+        """
+        # compile component vectors for each action
+        comps = []  # (action, [p,t,s])
+        for a in self.actions:
+            # build features consistently with predict
+            x = self.log_to_vector(','.join(self._extract_keywords(query_text)), 0.0, 0.0, a, pred_time)
+            x_scaled = self._transform_with_running(x) if self.scaler_mean is not None else x
+            p = float(self.model.predict(x_scaled.reshape(1, -1))[0][0]) if self.model is not None else 0.5
+            t = self._temporal_prior(a, pred_time)
+            s = self._semantic_prior(a, query_text)
+            # user modifier is applied only at predict time; we keep base temporal here to avoid leakage
+            comps.append((a, np.array([p, t, s], dtype=float)))
+        # current weights vector
+        w = np.array([self.w_model, self.w_temporal, self.w_semantic], dtype=float)
+        # identify competitor
+        true_vec = None
+        best_other = None
+        best_other_score = -1e9
+        for a, v in comps:
+            score = float(np.dot(w, v))
+            if a == true_action:
+                true_vec = v
+            else:
+                if score > best_other_score:
+                    best_other_score = score
+                    best_other = v
+        if true_vec is None or best_other is None:
+            return
+        margin = float(np.dot(w, true_vec - best_other))
+        if margin >= self.weight_margin:
+            self._weight_history.append({"ok": True, "margin": margin})
+            return
+        # PA update: w <- w + eta*(true - other), then project to simplex
+        eta = float(self.weight_lr)
+        w_new = w + eta * (true_vec - best_other)
+        # enforce non-negativity and minimum floor, then normalize to sum=1
+        w_new = np.maximum(w_new, self.weight_min)
+        w_new = w_new / max(1e-9, np.sum(w_new))
+        self.w_model, self.w_temporal, self.w_semantic = [float(x) for x in w_new]
+        self._weight_history.append({"ok": False, "margin": margin, "w": [self.w_model, self.w_temporal, self.w_semantic]})
+
+    def _nudge_weights(self, toward: str = 'temporal', alpha: float = 0.02):
+        w = np.array([self.w_model, self.w_temporal, self.w_semantic], dtype=float)
+        if toward == 'temporal':
+            w[1] += alpha
+        elif toward == 'semantic':
+            w[2] += alpha
+        else:
+            w[0] += alpha
+        w = np.maximum(w, self.weight_min)
+        w = w / max(1e-9, np.sum(w))
+        self.w_model, self.w_temporal, self.w_semantic = [float(x) for x in w]
+
+    def _on_drift_detected(self, action: str):
+        print(f"[drift] detected for action {action}")
+        info = self._drift_counts.setdefault(action, {"count": 0, "last_ts": 0})
+        info["count"] += 1
+        info["last_ts"] = time.time()
+        # persist drift counts
+        try:
+            path = os.path.join(self._data_dir, 'drift_counts.json')
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(self._drift_counts, f, indent=2)
+        except Exception:
+            pass
+        # optionally nudge weights to rely a bit more on temporal/semantic when drift occurs
+        if self.dynamic_weights:
+            self._nudge_weights(toward='temporal', alpha=0.01)
 
     # --------------------------- helpers exposed ---------------------------
     def extract_features_from_text(self, text: str) -> Tuple[str, float, float, str, Dict[str, float]]:
