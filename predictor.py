@@ -1,24 +1,3 @@
-"""
-TiresiasIQ Predictor — Adaptive Hybrid Model (v3)
-------------------------------------------------
-Features added / changed compared to v2.1:
-- Per-user lightweight memory (counts, last_seen, context centroid) and global memory
-- Online adaptation: update_with_log(...) updates priors, centroids, recency and running scaler without full retrain
-- Short-term retrieval: nearest-neighbour scoring against recent logs (configurable window)
-- Simple drift detector (Page-Hinkley style) per action to flag when retraining is recommended
-- Persistent feature-space: `all_keywords` and `actions` are authoritative and kept fixed unless explicitly expanded
-- Backwards-compatible API:
-    - update_running_status(data) -> X, y  (for initial batch training)
-    - predict(query, pred_time, user_id=None) -> PredictResult
-    - update_with_log(log_row, user_id=None)  # online-adapt on new single row
-
-Notes:
-- This module uses sentence-transformers if available for better sentence embeddings; else falls back to spaCy.
-- It avoids heavy dependencies for drift; uses a simple Page-Hinkley implementation.
-- The code assumes logs are stored elsewhere (SQLite). update_with_log should be called after inserting a new log.
-
-Author: Assistant
-"""
 from __future__ import annotations
 
 import math
